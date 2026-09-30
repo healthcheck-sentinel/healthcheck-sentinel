@@ -59,6 +59,7 @@ class StateManager:
 
         status.consecutive_failures = 0
         status.consecutive_successes = 0
+        status.first_failure_observed = None
         if candidate != status.state:
             self._transition(status, candidate, reason, result)
         else:

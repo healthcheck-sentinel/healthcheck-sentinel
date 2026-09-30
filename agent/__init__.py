@@ -23,4 +23,21 @@ Design principles:
   - Fast: polling and evaluation are non-blocking async operations
   - Self-contained: the agent can run without any external AI service
 """
-# TODO: Implement the deterministic monitoring agent
+
+from agent.dependency_graph import DependencyGraph, normalize_dependency_name
+from agent.incidents import Incident, IncidentManager
+from agent.models import ProbeResult, ServiceConfig, ServiceState, ServiceStatus
+from agent.root_cause import CorrelatedFailure, RootCauseAnalyzer
+
+__all__ = [
+    "DependencyGraph",
+    "normalize_dependency_name",
+    "Incident",
+    "IncidentManager",
+    "ProbeResult",
+    "ServiceConfig",
+    "ServiceState",
+    "ServiceStatus",
+    "CorrelatedFailure",
+    "RootCauseAnalyzer",
+]
