@@ -23,11 +23,19 @@ def _format_evidence(incident: Incident) -> str:
 
     lines = []
     for service, evidence in incident.evidence.items():
-        if isinstance(evidence, dict):
+        if isinstance(evidence, dict) and not service.startswith("_"):
             # Deliberately exclude raw URLs, exception strings and arbitrary values.
             checks = evidence.get("dependencies", {})
             failed = [str(name) for name, ok in checks.items() if ok is False] if isinstance(checks, dict) else []
             lines.append(f"{service}: healthz={evidence.get('healthz_status')}, readyz={evidence.get('readyz_status')}, failed dependencies={', '.join(failed) or 'none reported'}")
+    adjacent = incident.evidence.get('_adjacent_resources', {})
+    if isinstance(adjacent,dict):
+        for name,resources in adjacent.items():
+            if isinstance(resources,dict):
+                cpu = resources.get('cpu_percent')
+                available = resources.get('memory_available_bytes')
+                if isinstance(cpu,(int,float)) and isinstance(available,(int,float)):
+                    lines.append(f"{name}: CPU={cpu:.2f}% of one core, memory headroom={available/1048576:.1f} MiB")
     return "\n".join(lines)[:1500] or "Additional evidence retained in the private incident record."
 
 
@@ -54,7 +62,7 @@ def build_incident_alert(incident: Incident) -> dict[str, Any]:
         f"*Evidence*: {_format_evidence(incident)}"
     )
 
-    return {
+    payload = {
         "text": f"{incident.incident_id}: {incident.state} incident detected",
         "blocks": [
             {
@@ -65,6 +73,12 @@ def build_incident_alert(incident: Incident) -> dict[str, Any]:
 
         ],
     }
+
+    import os
+    if os.getenv('SLACK_ACTIONS_ENABLED','false').lower() == 'true':
+        from chatops.interactive import action_blocks
+        payload['blocks'].extend(action_blocks(incident.affected_services))
+    return payload
 
 
 def build_recovery_notification(incident: Incident) -> dict[str, Any]:

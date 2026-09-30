@@ -127,6 +127,7 @@ services:
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
       - SLACK_ALERT_CHANNEL=${SLACK_ALERT_CHANNEL:-}
       - STATUS_PORT=9101
+      - SLACK_ACTIONS_ENABLED=${SLACK_ACTIONS_ENABLED:-false}
     depends_on:
       payment-service:
         condition: service_healthy

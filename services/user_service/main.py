@@ -96,3 +96,8 @@ async def create_user(name: str, email: str):
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8003, reload=True)
+
+
+# Add resource evidence without changing business endpoints or liveness semantics.
+from services.health_resources import ResourceMiddleware
+app.add_middleware(ResourceMiddleware)

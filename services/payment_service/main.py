@@ -32,7 +32,18 @@ log = logging.getLogger(settings.service_name)
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
+from contextlib import asynccontextmanager
+from .checks import close_pools
+
+@asynccontextmanager
+async def lifespan(app):
+    try:
+        yield
+    finally:
+        await close_pools()
+
 app = FastAPI(
+    lifespan=lifespan,
     title="Payment Service",
     description="Handles payment processing for healthcheck-sentinel demo.",
     version="0.1.0",
@@ -128,3 +139,8 @@ async def create_payment(amount: float, currency: str = "USD"):
 if __name__ == "__main__":
     log.info("Starting %s on port %d", settings.service_name, settings.service_port)
     uvicorn.run("main:app", host="0.0.0.0", port=settings.service_port, reload=True)
+
+
+# Add resource evidence without changing business endpoints or liveness semantics.
+from services.health_resources import ResourceMiddleware
+app.add_middleware(ResourceMiddleware)

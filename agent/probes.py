@@ -48,6 +48,8 @@ class ProbeRunner:
             readyz_status=ready[0],
             latency_ms=(time.perf_counter() - started) * 1000,
             dependencies=dependencies,
+            resources=_parse_resources(ready[1]),
+            pools=_parse_pools(ready[1]),
             error_reason="; ".join(errors) if errors else None,
         )
 
@@ -70,3 +72,30 @@ def _parse_dependencies(body: Any) -> dict[str, bool]:
         elif isinstance(detail, bool):
             results[name] = detail
     return results
+
+def _safe_numbers(values, keys):
+    import math
+    if not isinstance(values, dict):
+        return {}
+    return {key: value for key,value in values.items() if key in keys
+            and isinstance(value, (int,float)) and not isinstance(value,bool)
+            and math.isfinite(value) and value >= 0}
+
+def _parse_resources(body):
+    if not isinstance(body, dict):
+        return {}
+    return _safe_numbers(body.get('resources'), {'memory_used_bytes','memory_limit_bytes',
+        'memory_available_bytes','cpu_seconds','cpu_percent','process_cpu_seconds',
+        'probe_cpu_seconds','probe_requests','monotonic_seconds'})
+
+def _parse_pools(body):
+    if not isinstance(body,dict) or not isinstance(body.get('checks'),dict):
+        return {}
+    result = {}
+    for name in ('postgres','redis'):
+        check = body['checks'].get(name, {})
+        if isinstance(check,dict):
+            result[name] = {'pool': _safe_numbers(check.get('pool'),
+                {'max_connections','in_use','idle','waiting','available'}),
+                'server_connections': _safe_numbers(check.get('server_connections'), {'used','capacity'})}
+    return result

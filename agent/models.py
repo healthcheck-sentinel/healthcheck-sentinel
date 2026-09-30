@@ -37,6 +37,8 @@ class ProbeResult:
     latency_ms: float
     dependencies: dict[str, bool] = field(default_factory=dict)
     error_reason: str | None = None
+    resources: dict[str, Any] = field(default_factory=dict)
+    pools: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -47,6 +49,8 @@ class ProbeResult:
             "latency_ms": round(self.latency_ms, 2),
             "dependencies": self.dependencies.copy(),
             "error_reason": self.error_reason,
+            "resources": self.resources.copy(),
+            "pools": self.pools.copy(),
         }
 
 

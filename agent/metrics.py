@@ -96,6 +96,15 @@ class MetricsCollector:
             registry=self.registry,
         )
 
+        self.target_resource_available = Gauge('healthcheck_target_resource_available',
+            'One when the latest probe includes target resource evidence', ['service'], registry=self.registry)
+        self.target_resources = Gauge('healthcheck_target_resource',
+            'Target container/process resource evidence; resource label specifies unit',
+            ['service','resource'], registry=self.registry)
+        self.pool_connections = Gauge('healthcheck_dependency_pool_connections',
+            'Bounded health-probe connection pool and backend capacity',
+            ['service','dependency','kind'], registry=self.registry)
+
         self._seen_incidents: set[str] = set()
         self._known_causes: set[str] = set()
         self._process = psutil.Process() if _HAS_PSUTIL else None
@@ -103,8 +112,22 @@ class MetricsCollector:
             self._process.cpu_percent(interval=None)
         self._start_time = time.time()
 
+    def record_target_resources(self, service, result):
+        import math
+        self.target_resource_available.labels(service=service).set(bool(result.resources))
+        for key,value in result.resources.items():
+            if key in ('cpu_percent','memory_used_bytes','memory_limit_bytes','memory_available_bytes','process_cpu_seconds','probe_cpu_seconds','probe_requests') and isinstance(value,(int,float)) and math.isfinite(value):
+                self.target_resources.labels(service=service,resource=key).set(value)
+        for dependency,evidence in result.pools.items():
+            if dependency not in ('postgres','redis'):
+                continue
+            for group,values in evidence.items():
+                for kind,value in values.items():
+                    self.pool_connections.labels(service=service,dependency=dependency,kind=group+'_'+kind).set(value)
+
     def record_probe(self, service: str, result: ProbeResult) -> None:
         """Record probe duration and failure metrics."""
+        self.record_target_resources(service, result)
         duration_s = result.latency_ms / 1000.0
         self.probe_duration.labels(service=service, probe_type="combined").observe(duration_s)
 

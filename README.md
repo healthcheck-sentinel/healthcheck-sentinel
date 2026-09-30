@@ -182,3 +182,8 @@ The optional helper only permits logs/restarts for payment-service, order-servic
 ```
 
 Use only on this local demo. Existing failure/recovery scripts retain their original behavior. See `docs/SAFE_FINALIZATION.md` for the latest additive work, validation and intentionally deferred changes. The existing submission ZIP received only a necessary secret-template sanitization; other entries are unchanged.
+
+
+## Resource checks and optional Slack operator actions
+
+See [extended health and operator setup](docs/EXTENDED_HEALTH.md) for memory headroom, bounded probe pools, target CPU/memory metrics, adjacent-service evidence, signed Slack logs/restart actions and the target-overhead benchmark. Existing Slack notification settings are preserved; interactive actions require explicit operator configuration.

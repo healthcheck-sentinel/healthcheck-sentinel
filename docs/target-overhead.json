@@ -1,0 +1,38 @@
+{
+  "method": "Paired quiet-host windows; process CPU delta / monotonic wall time. Normal Docker healthchecks remain active in both windows. No application load generated.",
+  "baseline": {
+    "payment-service": {
+      "cpu_percent_one_core": 0.2995178097325476,
+      "wall_seconds": 30.048296654000296
+    },
+    "order-service": {
+      "cpu_percent_one_core": 0.2995483015704554,
+      "wall_seconds": 30.045237956000165
+    },
+    "user-service": {
+      "cpu_percent_one_core": 0.3328167201769563,
+      "wall_seconds": 30.046567356000196
+    }
+  },
+  "monitored": {
+    "payment-service": {
+      "cpu_percent_one_core": 0.4661391996301701,
+      "wall_seconds": 30.033946964999814
+    },
+    "order-service": {
+      "cpu_percent_one_core": 0.5327553082970196,
+      "wall_seconds": 30.03254918499988
+    },
+    "user-service": {
+      "cpu_percent_one_core": 0.46619359208823974,
+      "wall_seconds": 30.030442797999967
+    }
+  },
+  "incremental_cpu_percent_one_core": {
+    "payment-service": 0.16662138989762248,
+    "order-service": 0.23320700672656414,
+    "user-service": 0.13337687191128345
+  },
+  "agent_cpu_percent_one_core": 0.8122060150513333,
+  "all_targets_below_one_percent": true
+}

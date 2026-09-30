@@ -1,0 +1,36 @@
+{
+  "scenarios": [
+    {
+      "service": "postgres",
+      "state": "ZOMBIE",
+      "detection_seconds": 5.280999999999949,
+      "recovery_seconds": 3.125,
+      "incident_notifications": 1,
+      "recovery_notifications": 1,
+      "duplicate_notifications": 0,
+      "delivery_evidence": "configured transport returned success; Slack UI not inspected"
+    },
+    {
+      "service": "redis",
+      "state": "ZOMBIE",
+      "detection_seconds": 7.842999999999847,
+      "recovery_seconds": 2.875,
+      "incident_notifications": 1,
+      "recovery_notifications": 1,
+      "duplicate_notifications": 0,
+      "delivery_evidence": "configured transport returned success; Slack UI not inspected"
+    },
+    {
+      "service": "payment-service",
+      "state": "DOWN",
+      "detection_seconds": 15.438000000000102,
+      "recovery_seconds": 8.765999999999622,
+      "incident_notifications": 1,
+      "recovery_notifications": 1,
+      "duplicate_notifications": 0,
+      "delivery_evidence": "configured transport returned success; Slack UI not inspected"
+    }
+  ],
+  "metrics_verified": true,
+  "healthy_after_recovery": true
+}

@@ -1,112 +1,66 @@
-"""
-checks.py — payment-service dependency health checks
-
-Each check function:
-  - Is async and lightweight (no writes, no side-effects)
-  - Returns a dict with "ok" (bool) and "detail" (str)
-  - Catches all exceptions so a failed check never crashes the probe endpoint
-  - Times out quickly so /readyz always responds promptly
-"""
-
+"""Bounded, read-only database/cache health probes with pool evidence."""
 import asyncio
-import logging
-
 import asyncpg
 import redis.asyncio as aioredis
-
+from services.probe_pool import ProbePool
 from .config import settings
 
-log = logging.getLogger(settings.service_name)
+async def _connect_postgres():
+    return await asyncio.wait_for(asyncpg.connect(settings.payment_db_url), settings.db_connect_timeout)
 
-
-# ---------------------------------------------------------------------------
-# PostgreSQL check
-# ---------------------------------------------------------------------------
-
-async def check_postgres() -> dict:
-    """
-    Open a single connection to PostgreSQL, run 'SELECT 1', then close.
-    Non-destructive: no data is read or written.
-    """
-    conn = None
+async def _close_postgres(conn):
     try:
-        conn = await asyncio.wait_for(
-            asyncpg.connect(settings.payment_db_url),
-            timeout=settings.db_connect_timeout,
-        )
-        await asyncio.wait_for(conn.fetchval("SELECT 1"), timeout=settings.db_connect_timeout)
-        log.debug("PostgreSQL check passed")
-        return {"ok": True, "detail": "reachable"}
-    except asyncio.TimeoutError:
-        log.warning("PostgreSQL check timed out after %.1fs", settings.db_connect_timeout)
-        return {"ok": False, "detail": f"timed out after {settings.db_connect_timeout}s"}
-    except Exception as exc:
-        log.warning("PostgreSQL check failed: %s", type(exc).__name__)
-        return {"ok": False, "detail": type(exc).__name__}
-    finally:
-        if conn is not None:
+        await asyncio.wait_for(conn.close(), 0.2)
+    except Exception:
+        conn.terminate()
+
+async def _connect_redis():
+    return aioredis.from_url(settings.payment_redis_url, max_connections=1,
+        socket_connect_timeout=settings.redis_connect_timeout,
+        socket_timeout=settings.redis_connect_timeout)
+
+async def _close_redis(client):
+    await asyncio.wait_for(client.aclose(), 0.2)
+
+postgres_pool = ProbePool(_connect_postgres, _close_postgres)
+redis_pool = ProbePool(_connect_redis, _close_redis)
+
+async def check_postgres():
+    try:
+        async with postgres_pool.acquire() as conn:
+            await asyncio.wait_for(conn.fetchval('SELECT 1'), settings.db_connect_timeout)
+            result = {'ok': True, 'detail': 'reachable'}
+            # Aggregate counts only: never return connection URLs or session identities.
             try:
-                await asyncio.wait_for(conn.close(), timeout=0.2)
+                row = await asyncio.wait_for(conn.fetchrow(
+                    "SELECT count(*) AS used, current_setting('max_connections')::int AS capacity FROM pg_stat_activity"),
+                    settings.db_connect_timeout)
+                result['server_connections'] = {'used': int(row['used']), 'capacity': int(row['capacity'])}
             except Exception:
-                conn.terminate()
-
-
-# ---------------------------------------------------------------------------
-# Redis check
-# ---------------------------------------------------------------------------
-
-async def check_redis() -> dict:
-    """
-    Connect to Redis, send PING, then close.
-    Non-destructive: only a PING command is issued.
-    """
-    client = None
-    try:
-        client = aioredis.from_url(
-            settings.payment_redis_url,
-            socket_connect_timeout=settings.redis_connect_timeout,
-            socket_timeout=settings.redis_connect_timeout,
-        )
-        await asyncio.wait_for(client.ping(), timeout=settings.redis_connect_timeout)
-        log.debug("Redis check passed")
-        return {"ok": True, "detail": "reachable"}
-    except asyncio.TimeoutError:
-        log.warning("Redis check timed out after %.1fs", settings.redis_connect_timeout)
-        return {"ok": False, "detail": f"timed out after {settings.redis_connect_timeout}s"}
+                result['capacity_available'] = False
+        result['pool'] = postgres_pool.snapshot()
+        return result
     except Exception as exc:
-        log.warning("Redis check failed: %s", type(exc).__name__)
-        return {"ok": False, "detail": type(exc).__name__}
-    finally:
-        if client:
-            await client.aclose()
+        return {'ok': False, 'detail': type(exc).__name__, 'pool': postgres_pool.snapshot()}
 
+async def check_redis():
+    try:
+        async with redis_pool.acquire() as client:
+            await asyncio.wait_for(client.ping(), settings.redis_connect_timeout)
+            result = {'ok': True, 'detail': 'reachable'}
+            try:
+                info = await asyncio.wait_for(client.info('clients'), settings.redis_connect_timeout)
+                result['server_connections'] = {'used': int(info['connected_clients']), 'capacity': int(info['maxclients'])}
+            except Exception:
+                result['capacity_available'] = False
+        result['pool'] = redis_pool.snapshot()
+        return result
+    except Exception as exc:
+        return {'ok': False, 'detail': type(exc).__name__, 'pool': redis_pool.snapshot()}
 
-# ---------------------------------------------------------------------------
-# Combined readiness check
-# ---------------------------------------------------------------------------
+async def run_readiness_checks():
+    postgres, redis = await asyncio.gather(check_postgres(), check_redis())
+    return {'ready': postgres['ok'] and redis['ok'], 'checks': {'postgres': postgres, 'redis': redis}}
 
-async def run_readiness_checks() -> dict:
-    """
-    Run all dependency checks concurrently and aggregate the result.
-    Returns a dict with:
-      - ready (bool): True only when ALL checks pass
-      - checks (dict): per-dependency results
-    """
-    postgres_result, redis_result = await asyncio.gather(
-        check_postgres(),
-        check_redis(),
-    )
-
-    checks = {
-        "postgres": postgres_result,
-        "redis": redis_result,
-    }
-    all_ok = all(c["ok"] for c in checks.values())
-
-    if all_ok:
-        log.info("Readiness probe passed — all dependencies reachable")
-    else:
-        failed = [name for name, c in checks.items() if not c["ok"]]
-        log.warning("Readiness probe failed — unhealthy dependencies: %s", failed)
-
-    return {"ready": all_ok, "checks": checks}
+async def close_pools():
+    await asyncio.gather(postgres_pool.close(), redis_pool.close())

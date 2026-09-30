@@ -53,7 +53,7 @@ class RootCauseAnalyzer:
         if evidence and hasattr(evidence, "dependencies") and evidence.dependencies:
             for dep_name, is_healthy in evidence.dependencies.items():
                 if is_healthy is False:
-                    causes.append(normalize_dependency_name(dep_name))
+                    causes.append(f"{service}:memory" if dep_name == "memory" else normalize_dependency_name(dep_name))
 
         if causes:
             return causes
@@ -92,6 +92,12 @@ class RootCauseAnalyzer:
         for cause, entries in sorted(cause_to_services.items(), key=lambda x: x[0]):
             services = sorted([e[0] for e in entries])
             evidence_map = {e[0]: e[2] for e in entries}
+
+            evidence_map['_adjacent_resources'] = {
+                name: (st.evidence.resources if isinstance(st, ServiceStatus) and st.evidence
+                       else (st.get('evidence') or {}).get('resources', {}) if isinstance(st,dict) else {})
+                for name,st in statuses.items()
+            }
 
             # Determine dominant state across affected services (DOWN > ZOMBIE > DEGRADED)
             states = []

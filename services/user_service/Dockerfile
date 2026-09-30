@@ -15,3 +15,5 @@ COPY services/user_service/ ./services/user_service/
 EXPOSE 8003
 
 CMD ["uvicorn", "services.user_service.main:app", "--loop", "asyncio", "--host", "0.0.0.0", "--port", "8003"]
+
+COPY services/health_resources.py services/probe_pool.py ./services/
