@@ -1,0 +1,4 @@
+# tests/unit/
+# Unit tests for healthcheck-sentinel.
+# Tests here should be fast, isolated, and require no running services.
+# TODO: Add test files as service modules are implemented.

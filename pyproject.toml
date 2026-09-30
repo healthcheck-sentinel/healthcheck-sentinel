@@ -1,0 +1,16 @@
+# pytest configuration for healthcheck-sentinel
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--cov=services",
+    "--cov=agent",
+    "--cov=chatops",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+]

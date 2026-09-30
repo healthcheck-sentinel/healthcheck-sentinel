@@ -1,0 +1,9 @@
+# kubernetes/base/namespace.yaml
+# TODO: Expand with additional resource manifests as services are implemented.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: healthcheck-sentinel
+  labels:
+    app.kubernetes.io/name: healthcheck-sentinel
+    app.kubernetes.io/managed-by: kustomize

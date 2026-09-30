@@ -1,0 +1,4 @@
+# tests/integration/
+# Integration tests for healthcheck-sentinel.
+# Tests here may require a running database or Redis instance (use docker-compose for CI).
+# TODO: Add test files as service modules are implemented.

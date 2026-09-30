@@ -1,0 +1,15 @@
+# kubernetes/base/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: healthcheck-sentinel
+
+resources:
+  - namespace.yaml
+  # TODO: Add deployment/service YAMLs here as services are implemented
+  # - health-checker-deployment.yaml
+  # - alert-manager-deployment.yaml
+  # - api-gateway-deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: healthcheck-sentinel

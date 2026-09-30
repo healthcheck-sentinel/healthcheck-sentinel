@@ -1,0 +1,4 @@
+# tests/e2e/
+# End-to-end tests for healthcheck-sentinel.
+# These tests run against the full stack (requires a running docker-compose or K8s cluster).
+# TODO: Add test files once the full stack is operational.

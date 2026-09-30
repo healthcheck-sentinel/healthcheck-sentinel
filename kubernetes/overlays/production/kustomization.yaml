@@ -1,0 +1,11 @@
+# kubernetes/overlays/production/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+# TODO: Add production-specific patches (HPA, resource limits, node affinity, etc.)
+# patchesStrategicMerge:
+#   - hpa-patch.yaml
+#   - resource-limits-patch.yaml

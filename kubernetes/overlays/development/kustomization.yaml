@@ -1,0 +1,10 @@
+# kubernetes/overlays/development/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+# TODO: Add development-specific patches (low replica counts, debug env vars, etc.)
+# patchesStrategicMerge:
+#   - replicas-patch.yaml
