@@ -8,3 +8,13 @@ htmlcov
 .coverage
 .secrets
 secrets
+
+# Local-only artifacts and runtime state
+.sentinel-state
+dist
+docker-data
+node_modules
+.pytest_cache
+tmp
+temp
+*.tmp

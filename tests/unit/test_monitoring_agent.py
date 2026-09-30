@@ -27,13 +27,14 @@ def result(
     postgres: bool = True,
     redis: bool = True,
     error: str | None = None,
+    latency_ms: float = 12.5,
 ) -> ProbeResult:
     return ProbeResult(
         service=PAYMENT.name,
         timestamp=START + timedelta(seconds=second),
         healthz_status=healthz,
         readyz_status=readyz,
-        latency_ms=12.5,
+        latency_ms=latency_ms,
         dependencies={"postgres": postgres, "redis": redis},
         error_reason=error,
     )
@@ -46,6 +47,7 @@ def result(
         (result(readyz=503, postgres=False), ServiceState.ZOMBIE),
         (result(readyz=503, redis=False), ServiceState.ZOMBIE),
         (result(healthz=None, readyz=None, error="ConnectError"), ServiceState.DOWN),
+        (result(latency_ms=1750), ServiceState.DEGRADED),
     ],
 )
 def test_classifies_probe_evidence(evidence: ProbeResult, expected: ServiceState) -> None:

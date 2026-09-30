@@ -221,6 +221,23 @@ def test_recovery_resolves_incident() -> None:
     assert inc.duration_seconds == 60.0
 
 
+def test_incident_lifecycle_timestamps_are_ordered_and_duration_is_positive() -> None:
+    manager = IncidentManager()
+    failing = make_status("payment-service", ServiceState.ZOMBIE, second=2, readyz=503, postgres=False)
+    failing.first_failure_observed = START + timedelta(seconds=5)
+    failing.failure_confirmed_at = START + timedelta(seconds=3)
+    manager.process_statuses({"payment-service": failing})
+    incident = manager.get_active_incidents()[0]
+
+    assert datetime.fromisoformat(incident.first_failure_time) <= datetime.fromisoformat(incident.confirmation_time)
+
+    recovered = make_status("payment-service", ServiceState.HEALTHY, second=12)
+    manager.process_statuses({"payment-service": recovered})
+    resolved = manager.get_resolved_incidents()[0]
+    assert datetime.fromisoformat(resolved.confirmation_time) <= datetime.fromisoformat(resolved.recovery_time)
+    assert resolved.duration_seconds is not None and resolved.duration_seconds > 0
+
+
 def test_partial_recovery_keeps_incident_active() -> None:
     manager = IncidentManager()
 

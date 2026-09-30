@@ -26,6 +26,7 @@ class ServiceConfig:
     healthz_path: str = "/healthz"
     readyz_path: str = "/readyz"
     critical_dependencies: tuple[str, ...] = ()
+    degraded_latency_ms: float = 1500.0
 
 
 @dataclass(frozen=True)

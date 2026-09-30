@@ -35,17 +35,22 @@ class RootCauseAnalyzer:
             state_val = status.state.value if hasattr(status.state, "value") else str(status.state)
             evidence = status.evidence
             service = status.service
+            reason = status.reason
         else:
             state_val = status.get("state", "HEALTHY")
             service = status.get("service", "unknown")
             ev_raw = status.get("evidence")
             evidence = ProbeResult(**ev_raw) if isinstance(ev_raw, dict) else ev_raw
+            reason = status.get("reason", "")
 
         if state_val == ServiceState.HEALTHY.value:
             return []
 
         if state_val == ServiceState.DOWN.value:
             return [service]
+
+        if state_val == ServiceState.DEGRADED.value and "response latency" in reason.lower():
+            return ["response_latency"]
 
         causes: list[str] = []
 
@@ -57,9 +62,6 @@ class RootCauseAnalyzer:
 
         if causes:
             return causes
-
-        if state_val == ServiceState.DOWN.value:
-            return [service]
 
         if state_val in (ServiceState.ZOMBIE.value, ServiceState.DEGRADED.value):
             # If no specific dependency reported false, attribute to service readiness
@@ -162,6 +164,9 @@ class RootCauseAnalyzer:
         """Generate a clear, human-readable explanation for the correlated failure."""
         display_cause = "PostgreSQL" if root_cause == "postgresql" else ("Redis" if root_cause == "redis" else root_cause)
         services = sorted(affected_services)
+
+        if root_cause == "response_latency":
+            return f"{', '.join(services)} is degraded due to high response latency."
 
         if len(services) == 1:
             svc = services[0]

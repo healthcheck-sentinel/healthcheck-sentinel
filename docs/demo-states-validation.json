@@ -1,0 +1,26 @@
+{
+  "scenarios": [
+    {
+      "state": "DEGRADED",
+      "active_notifications": 1,
+      "recovery_notifications": 1,
+      "transport_outcomes": "delivered",
+      "other_services_healthy": true
+    },
+    {
+      "state": "ZOMBIE",
+      "active_notifications": 1,
+      "recovery_notifications": 1,
+      "transport_outcomes": "delivered",
+      "other_services_healthy": true
+    },
+    {
+      "state": "DOWN",
+      "active_notifications": 1,
+      "recovery_notifications": 1,
+      "transport_outcomes": "delivered",
+      "other_services_healthy": true
+    }
+  ],
+  "normal_configuration_restored": true
+}

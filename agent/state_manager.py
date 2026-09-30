@@ -25,8 +25,8 @@ class StateManager:
         previous_evidence = status.evidence
         status.evidence = result
 
-        failed = candidate in (ServiceState.DOWN, ServiceState.ZOMBIE)
-        currently_failed = status.state in (ServiceState.DOWN, ServiceState.ZOMBIE)
+        failed = candidate in (ServiceState.DOWN, ServiceState.ZOMBIE, ServiceState.DEGRADED)
+        currently_failed = status.state in (ServiceState.DOWN, ServiceState.ZOMBIE, ServiceState.DEGRADED)
         if not currently_failed and failed:
             if status.consecutive_failures == 0:
                 status.first_failure_observed = result.timestamp

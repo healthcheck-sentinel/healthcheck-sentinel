@@ -144,3 +144,12 @@ if __name__ == "__main__":
 # Add resource evidence without changing business endpoints or liveness semantics.
 from services.health_resources import ResourceMiddleware
 app.add_middleware(ResourceMiddleware)
+
+import os
+from .demo_latency import DemoLatency
+
+app = DemoLatency(
+    app,
+    "/run/sentinel-demo/payment-service.json",
+    enabled=os.getenv("SENTINEL_DEMO_ENABLED") == "1",
+)

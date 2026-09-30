@@ -37,6 +37,30 @@ class ScenarioProbes:
     async def probe(self, config: ServiceConfig) -> ProbeResult:
         return self.results[config.name]
 
+    def set_latency(self, second: int, payment_latency_ms: float) -> None:
+        for service in REGISTRY:
+            self.results[service.name] = ProbeResult(
+                service=service.name,
+                timestamp=START + timedelta(seconds=second),
+                healthz_status=200,
+                readyz_status=200,
+                latency_ms=payment_latency_ms if service.name == "payment-service" else 18.0,
+                dependencies={"postgres": True, "redis": True},
+            )
+
+    def set_payment_down(self, second: int, down: bool) -> None:
+        for service in REGISTRY:
+            is_payment = service.name == "payment-service"
+            self.results[service.name] = ProbeResult(
+                service=service.name,
+                timestamp=START + timedelta(seconds=second),
+                healthz_status=None if is_payment and down else 200,
+                readyz_status=None if is_payment and down else 200,
+                latency_ms=18.0,
+                dependencies={} if is_payment and down else {"postgres": True, "redis": True},
+                error_reason="ConnectError" if is_payment and down else None,
+            )
+
 
 class RecordingSlackTransport:
     def __init__(self, fail: bool = False) -> None:
@@ -196,3 +220,58 @@ async def test_slack_failure_does_not_stop_monitoring_or_lose_incident(caplog: p
     assert all(status["state"] == ServiceState.ZOMBIE.value for status in statuses.values())
     assert "Slack delivery failed for incident INC-001 (ACTIVE)" in caplog.text
     assert "incident state is preserved" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_latency_degraded_transition_and_recovery_alerts_are_deduplicated() -> None:
+    probes = ScenarioProbes()
+    probes.set_latency(0, 18.0)
+    transport = RecordingSlackTransport()
+    agent = make_agent(probes, transport)
+
+    await agent.poll_once()
+    probes.set_latency(1, 1800.0)
+    statuses = await agent.poll_once()
+    await agent.poll_once()
+
+    assert statuses["payment-service"]["state"] == "DEGRADED"
+    assert len(agent.incidents.get_active_incidents()) == 1
+    assert agent.incidents.get_active_incidents()[0].root_cause == "response_latency"
+    assert len(transport.messages) == 1
+    assert "DEGRADED" in transport.messages[0]["text"]
+    assert "high response latency" in message_text(transport.messages[0])
+    assert "measured latency=" in message_text(transport.messages[0])
+
+    probes.set_latency(2, 18.0)
+    await agent.poll_once()
+    await agent.poll_once()
+
+    assert agent.incidents.get_active_incidents() == []
+    assert len(agent.incidents.get_resolved_incidents()) == 1
+    assert len(transport.messages) == 2
+    assert transport.messages[1]["text"] == "INC-001: resolved"
+
+
+@pytest.mark.asyncio
+async def test_down_transition_and_recovery_send_one_alert_each() -> None:
+    probes = ScenarioProbes()
+    probes.set_payment_down(0, False)
+    transport = RecordingSlackTransport()
+    agent = make_agent(probes, transport)
+
+    await agent.poll_once()
+    probes.set_payment_down(1, True)
+    statuses = await agent.poll_once()
+    await agent.poll_once()
+
+    assert statuses["payment-service"]["state"] == "DOWN"
+    assert len(agent.incidents.get_active_incidents()) == 1
+    assert len(transport.messages) == 1
+
+    probes.set_payment_down(2, False)
+    await agent.poll_once()
+    await agent.poll_once()
+
+    assert agent.incidents.get_active_incidents() == []
+    assert len(transport.messages) == 2
+    assert transport.messages[1]["text"] == "INC-001: resolved"

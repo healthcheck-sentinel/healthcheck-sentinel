@@ -187,3 +187,8 @@ Use only on this local demo. Existing failure/recovery scripts retain their orig
 ## Resource checks and optional Slack operator actions
 
 See [extended health and operator setup](docs/EXTENDED_HEALTH.md) for memory headroom, bounded probe pools, target CPU/memory metrics, adjacent-service evidence, signed Slack logs/restart actions and the target-overhead benchmark. Existing Slack notification settings are preserved; interactive actions require explicit operator configuration.
+
+
+## Current reviewer commands
+
+Use `reviewer_demo.py healthy`, `status`, `degraded`, `zombie`, `down`, and `recover` with the project Python environment. See [reviewer walkthrough](docs/DEMO_STATES.md). DEGRADED uses a bounded real-response latency lease; ZOMBIE and DOWN stop actual containers. Recover after each scenario. Normal Compose startup leaves latency injection disabled.

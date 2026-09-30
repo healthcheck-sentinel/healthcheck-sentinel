@@ -28,6 +28,9 @@ def _format_evidence(incident: Incident) -> str:
             checks = evidence.get("dependencies", {})
             failed = [str(name) for name, ok in checks.items() if ok is False] if isinstance(checks, dict) else []
             lines.append(f"{service}: healthz={evidence.get('healthz_status')}, readyz={evidence.get('readyz_status')}, failed dependencies={', '.join(failed) or 'none reported'}")
+            latency = evidence.get("latency_ms")
+            if isinstance(latency, (int, float)) and not isinstance(latency, bool):
+                lines.append(f"{service}: measured latency={latency:.2f}ms")
     adjacent = incident.evidence.get('_adjacent_resources', {})
     if isinstance(adjacent,dict):
         for name,resources in adjacent.items():

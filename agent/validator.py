@@ -26,10 +26,10 @@ class StateValidator:
     ) -> list[ProbeResult]:
         results = [initial]
         first_state, _ = classify(config, initial)
-        if first_state in (ServiceState.DOWN, ServiceState.ZOMBIE):
+        if first_state in (ServiceState.DOWN, ServiceState.ZOMBIE, ServiceState.DEGRADED):
             goal = self.failure_threshold
             is_failure = True
-        elif current_state in (ServiceState.DOWN, ServiceState.ZOMBIE):
+        elif current_state in (ServiceState.DOWN, ServiceState.ZOMBIE, ServiceState.DEGRADED):
             goal = self.recovery_threshold
             is_failure = False
         else:
@@ -41,7 +41,7 @@ class StateValidator:
             result = await probe()
             results.append(result)
             state, _ = classify(config, result)
-            matches = state in (ServiceState.DOWN, ServiceState.ZOMBIE) if is_failure else state in (ServiceState.HEALTHY, ServiceState.DEGRADED)
+            matches = state in (ServiceState.DOWN, ServiceState.ZOMBIE, ServiceState.DEGRADED) if is_failure else state == ServiceState.HEALTHY
             consecutive = consecutive + 1 if matches else 0
             if not matches:
                 return results

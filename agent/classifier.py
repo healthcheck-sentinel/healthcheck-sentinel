@@ -33,4 +33,9 @@ def classify(config: ServiceConfig, result: ProbeResult) -> tuple[ServiceState, 
         return ServiceState.DEGRADED, "Readiness response is missing required dependency evidence."
     if result.error_reason:
         return ServiceState.DEGRADED, result.error_reason
+    if result.latency_ms > config.degraded_latency_ms:
+        return ServiceState.DEGRADED, (
+            f"Response latency {result.latency_ms:.0f}ms exceeded "
+            f"the {config.degraded_latency_ms:.0f}ms threshold."
+        )
     return ServiceState.HEALTHY, "Liveness, readiness, and all critical dependencies are healthy."

@@ -48,6 +48,9 @@ services:
       - PAYMENT_DB_URL=${PAYMENT_DB_URL:-postgresql://postgres:postgres@postgres:5432/healthcheck}
       - PAYMENT_REDIS_URL=${PAYMENT_REDIS_URL:-redis://redis:6379/0}
       - PAYMENT_LOG_LEVEL=${PAYMENT_LOG_LEVEL:-INFO}
+      - SENTINEL_DEMO_ENABLED=${SENTINEL_DEMO_ENABLED:-0}
+    volumes:
+      - ./.sentinel-state/state-demo:/run/sentinel-demo:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -121,6 +124,7 @@ services:
       - AGENT_POLL_INTERVAL_SECONDS=4
       - AGENT_FAILURE_THRESHOLD=3
       - AGENT_RECOVERY_THRESHOLD=2
+      - AGENT_DEGRADED_LATENCY_MS=1500
       - METRICS_PORT=9100
       - AGENT_LOG_LEVEL=INFO
       - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}

@@ -17,6 +17,19 @@ def _utc_iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _parse_timestamp(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value)
+    return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed
+
+
+def _ordered_failure_times(first_failure: str, confirmation: str) -> tuple[str, str]:
+    first = _parse_timestamp(first_failure)
+    confirmed = _parse_timestamp(confirmation)
+    if confirmed < first:
+        return first.isoformat(), first.isoformat()
+    return first.isoformat(), confirmed.isoformat()
+
+
 @dataclass
 class Incident:
     """Shared Incident Contract model consumed across healthcheck-sentinel."""
@@ -120,16 +133,21 @@ class IncidentManager:
                     incident.state,
                 )
 
-                if corr.confirmation_time and corr.confirmation_time > incident.confirmation_time:
-                    incident.confirmation_time = corr.confirmation_time
+                if corr.confirmation_time:
+                    _, incident.confirmation_time = _ordered_failure_times(
+                        incident.first_failure_time,
+                        max((incident.confirmation_time, corr.confirmation_time), key=_parse_timestamp),
+                    )
 
                 if corr.detection_time_seconds is not None:
                     incident.detection_time_seconds = corr.detection_time_seconds
             else:
                 # Create new incident
                 incident_id = self._next_incident_id()
-                first_failure = corr.first_failure_time or _utc_iso_now()
-                confirmation = corr.confirmation_time or first_failure
+                first_failure, confirmation = _ordered_failure_times(
+                    corr.first_failure_time or _utc_iso_now(),
+                    corr.confirmation_time or corr.first_failure_time or _utc_iso_now(),
+                )
 
                 incident = Incident(
                     incident_id=incident_id,
@@ -182,7 +200,10 @@ class IncidentManager:
                 if all_recovered:
                     # Resolve incident
                     incident.status = "RESOLVED"
-                    incident.recovery_time = max(recovery_timestamps) if recovery_timestamps else _utc_iso_now()
+                    recovery_time = max(recovery_timestamps, key=_parse_timestamp) if recovery_timestamps else _utc_iso_now()
+                    if _parse_timestamp(recovery_time) <= _parse_timestamp(incident.confirmation_time):
+                        recovery_time = _utc_iso_now()
+                    incident.recovery_time = recovery_time
                     resolved_causes.append(cause)
 
         for cause in resolved_causes:
