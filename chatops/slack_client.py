@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import time
 from typing import Any
 
 import httpx
@@ -65,9 +66,16 @@ class SlackClient:
             timeout=10,
         )
         response.raise_for_status()
+        if not response.json().get("ok", False):
+            raise RuntimeError("Slack API rejected the message")
         return response
 
     def verify_request(self, body: bytes | str, timestamp: str, signature: str) -> bool:
         if not self.signing_secret:
             raise RuntimeError("SLACK_SIGNING_SECRET is required for interactive request verification.")
+        try:
+            if abs(time.time() - int(timestamp)) > 300:
+                return False
+        except (ValueError, TypeError):
+            return False
         return verify_slack_signature(body, timestamp, signature, self.signing_secret)

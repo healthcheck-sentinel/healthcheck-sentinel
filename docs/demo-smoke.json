@@ -1,0 +1,112 @@
+{
+  "measured_at": "2026-09-30T11:37:41.693453+00:00",
+  "environment": "Docker Desktop Linux; three services",
+  "notification_transport": "local HTTP webhook capture; not real Slack",
+  "baseline": "all healthz/readyz 200; all HEALTHY",
+  "scenarios": [
+    {
+      "cause": "postgresql",
+      "endpoints_during_failure": {
+        "payment-service": {
+          "healthz": 200,
+          "readyz": 503
+        },
+        "order-service": {
+          "healthz": 200,
+          "readyz": 503
+        }
+      },
+      "incident": {
+        "incident_id": "INC-001",
+        "status": "RESOLVED",
+        "state": "ZOMBIE",
+        "root_cause": "postgresql",
+        "affected_services": [
+          "order-service",
+          "payment-service"
+        ],
+        "first_failure_time": "2026-09-30T11:37:45.237316+00:00",
+        "confirmation_time": "2026-09-30T11:37:48.265867+00:00",
+        "recovery_time": "2026-09-30T11:38:01.075774+00:00",
+        "detection_time_seconds": 3.028551,
+        "explanation": "order-service and payment-service are alive but not ready. Both report PostgreSQL connectivity failure. PostgreSQL is the shared failing critical dependency.",
+        "evidence": {
+          "payment-service": {
+            "service": "payment-service",
+            "timestamp": "2026-09-30T11:37:55.830162+00:00",
+            "healthz_status": 200,
+            "readyz_status": 503,
+            "latency_ms": 509.83,
+            "dependencies": {
+              "postgres": false,
+              "redis": true
+            },
+            "error_reason": "HTTP 503 from http://payment-service:8001/readyz"
+          },
+          "order-service": {
+            "service": "order-service",
+            "timestamp": "2026-09-30T11:37:55.836719+00:00",
+            "healthz_status": 200,
+            "readyz_status": 503,
+            "latency_ms": 510.89,
+            "dependencies": {
+              "postgres": false,
+              "redis": true
+            },
+            "error_reason": "HTTP 503 from http://order-service:8002/readyz"
+          }
+        }
+      },
+      "injection_to_confirmation_seconds": 6.564413,
+      "first_failed_probe_to_confirmation_seconds": 3.028551,
+      "restart_to_recovery_seconds": 5.606502,
+      "confirmation_to_webhook_receipt_seconds": 0.022523,
+      "notifications": [
+        {
+          "incident_id": "INC-001",
+          "status": "ACTIVE",
+          "outcome": "delivered",
+          "dispatch_seconds": 0.023286848999987342,
+          "completed_at": "2026-09-30T11:37:48.289714+00:00"
+        },
+        {
+          "incident_id": "INC-001",
+          "status": "RESOLVED",
+          "outcome": "delivered",
+          "dispatch_seconds": 0.02006334500003959,
+          "completed_at": "2026-09-30T11:38:01.096262+00:00"
+        }
+      ],
+      "captured_http_messages": 2,
+      "duplicate_incidents": 0
+    }
+  ],
+  "metrics_available": [
+    "healthcheck_service_status",
+    "healthcheck_probe_duration_seconds",
+    "healthcheck_probe_failures_total",
+    "healthcheck_detection_seconds",
+    "healthcheck_incidents_total",
+    "healthcheck_process_cpu_percent",
+    "healthcheck_process_memory_bytes"
+  ],
+  "prometheus_targets": [
+    {
+      "job": "monitoring-agent",
+      "health": "up"
+    },
+    {
+      "job": "prometheus",
+      "health": "up"
+    }
+  ],
+  "probe_mean_seconds": [
+    {
+      "metric": {},
+      "value": [
+        1790768281.224,
+        "0.28240211219231415"
+      ]
+    }
+  ]
+}

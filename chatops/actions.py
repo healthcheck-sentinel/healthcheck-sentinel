@@ -22,21 +22,8 @@ def build_restart_action() -> dict[str, Any]:
 
 
 def handle_view_logs_action() -> dict[str, Any]:
-    return {
-        "status": "ok",
-        "action": "view_logs",
-        "logs": [
-            "2026-09-30T12:00:00Z INFO payment-service healthy",
-            "2026-09-30T12:00:05Z ERROR payment-service postgres connection timeout",
-            "2026-09-30T12:00:08Z ERROR order-service dependency failure detected",
-        ],
-    }
+    return {"status": "disabled", "action": "view_logs", "message": "Use authenticated operator logs; no log backend is configured."}
 
 
 def handle_restart_action() -> dict[str, Any]:
-    return {
-        "status": "accepted",
-        "action": "restart_incident",
-        "backend": "placeholder",
-        "message": "restart request queued for orchestration integration",
-    }
+    return {"status": "disabled", "action": "restart_incident", "message": "Use authenticated Docker or Kubernetes operator access; remote restart is disabled."}

@@ -28,21 +28,27 @@ async def check_postgres() -> dict:
     Open a single connection to PostgreSQL, run 'SELECT 1', then close.
     Non-destructive: no data is read or written.
     """
+    conn = None
     try:
         conn = await asyncio.wait_for(
             asyncpg.connect(settings.order_db_url),
             timeout=settings.db_connect_timeout,
         )
-        await conn.fetchval("SELECT 1")
-        await conn.close()
+        await asyncio.wait_for(conn.fetchval("SELECT 1"), timeout=settings.db_connect_timeout)
         log.debug("PostgreSQL check passed")
         return {"ok": True, "detail": "reachable"}
     except asyncio.TimeoutError:
         log.warning("PostgreSQL check timed out after %.1fs", settings.db_connect_timeout)
         return {"ok": False, "detail": f"timed out after {settings.db_connect_timeout}s"}
     except Exception as exc:
-        log.warning("PostgreSQL check failed: %s", exc)
-        return {"ok": False, "detail": str(exc)}
+        log.warning("PostgreSQL check failed: %s", type(exc).__name__)
+        return {"ok": False, "detail": type(exc).__name__}
+    finally:
+        if conn is not None:
+            try:
+                await asyncio.wait_for(conn.close(), timeout=0.2)
+            except Exception:
+                conn.terminate()
 
 
 # ---------------------------------------------------------------------------
@@ -68,8 +74,8 @@ async def check_redis() -> dict:
         log.warning("Redis check timed out after %.1fs", settings.redis_connect_timeout)
         return {"ok": False, "detail": f"timed out after {settings.redis_connect_timeout}s"}
     except Exception as exc:
-        log.warning("Redis check failed: %s", exc)
-        return {"ok": False, "detail": str(exc)}
+        log.warning("Redis check failed: %s", type(exc).__name__)
+        return {"ok": False, "detail": type(exc).__name__}
     finally:
         if client:
             await client.aclose()

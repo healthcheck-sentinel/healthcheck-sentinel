@@ -44,6 +44,9 @@ class RootCauseAnalyzer:
         if state_val == ServiceState.HEALTHY.value:
             return []
 
+        if state_val == ServiceState.DOWN.value:
+            return [service]
+
         causes: list[str] = []
 
         # Check dependency failures from probe evidence

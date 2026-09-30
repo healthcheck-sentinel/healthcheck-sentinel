@@ -16,6 +16,7 @@ class ProbeRunner:
     def __init__(self, timeout_seconds: float = 3.0, client: httpx.AsyncClient | None = None):
         self.timeout_seconds = timeout_seconds
         self.client = client
+        self._owns_client = client is None
 
     async def _get(self, client: httpx.AsyncClient, url: str) -> tuple[int | None, Any, str | None]:
         try:
@@ -31,16 +32,12 @@ class ProbeRunner:
 
     async def probe(self, config: ServiceConfig) -> ProbeResult:
         started = time.perf_counter()
-        owns_client = self.client is None
-        client = self.client or httpx.AsyncClient()
-        try:
-            health, ready = await asyncio.gather(
-                self._get(client, f"{config.base_url}{config.healthz_path}"),
-                self._get(client, f"{config.base_url}{config.readyz_path}"),
-            )
-        finally:
-            if owns_client:
-                await client.aclose()
+        if self.client is None:
+            self.client = httpx.AsyncClient()
+        health, ready = await asyncio.gather(
+            self._get(self.client, f"{config.base_url}{config.healthz_path}"),
+            self._get(self.client, f"{config.base_url}{config.readyz_path}"),
+        )
 
         dependencies = _parse_dependencies(ready[1])
         errors = [message for message in (health[2], ready[2]) if message]
@@ -53,6 +50,11 @@ class ProbeRunner:
             dependencies=dependencies,
             error_reason="; ".join(errors) if errors else None,
         )
+
+    async def aclose(self) -> None:
+        if self._owns_client and self.client is not None:
+            await self.client.aclose()
+            self.client = None
 
 
 def _parse_dependencies(body: Any) -> dict[str, bool]:

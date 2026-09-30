@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,7 +7,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +22,7 @@ services:
     image: redis:7-alpine
     container_name: redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -40,8 +38,11 @@ services:
       context: .
       dockerfile: services/payment_service/Dockerfile
     container_name: payment-service
+    dns_opt:
+      - "timeout:1"
+      - "attempts:1"
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     environment:
       - APP_ENV=${APP_ENV:-development}
       - PAYMENT_DB_URL=${PAYMENT_DB_URL:-postgresql://postgres:postgres@postgres:5432/healthcheck}
@@ -65,8 +66,11 @@ services:
       context: .
       dockerfile: services/order_service/Dockerfile
     container_name: order-service
+    dns_opt:
+      - "timeout:1"
+      - "attempts:1"
     ports:
-      - "8002:8002"
+      - "127.0.0.1:8002:8002"
     environment:
       - APP_ENV=${APP_ENV:-development}
       - ORDER_DB_URL=${ORDER_DB_URL:-postgresql://postgres:postgres@postgres:5432/healthcheck}
@@ -91,7 +95,7 @@ services:
       dockerfile: services/user_service/Dockerfile
     container_name: user-service
     ports:
-      - "8003:8003"
+      - "127.0.0.1:8003:8003"
     environment:
       - APP_ENV=${APP_ENV:-development}
     healthcheck:
@@ -100,6 +104,54 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+    restart: unless-stopped
+
+  monitoring-agent:
+    build:
+      context: .
+      dockerfile: agent/Dockerfile
+    container_name: monitoring-agent
+    ports:
+      - "127.0.0.1:9100:9100"
+      - "127.0.0.1:9101:9101"
+    environment:
+      - PAYMENT_SERVICE_URL=http://payment-service:8001
+      - ORDER_SERVICE_URL=http://order-service:8002
+      - USER_SERVICE_URL=http://user-service:8003
+      - AGENT_POLL_INTERVAL_SECONDS=4
+      - AGENT_FAILURE_THRESHOLD=3
+      - AGENT_RECOVERY_THRESHOLD=2
+      - METRICS_PORT=9100
+      - AGENT_LOG_LEVEL=INFO
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN:-}
+      - SLACK_ALERT_CHANNEL=${SLACK_ALERT_CHANNEL:-}
+      - STATUS_PORT=9101
+    depends_on:
+      payment-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9101/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+    depends_on:
+      - monitoring-agent
     restart: unless-stopped
 
 volumes:

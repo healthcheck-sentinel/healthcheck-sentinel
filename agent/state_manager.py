@@ -22,6 +22,7 @@ class StateManager:
     def observe(self, config: ServiceConfig, result: ProbeResult) -> ServiceStatus:
         status = self.get(config.name)
         candidate, reason = classify(config, result)
+        previous_evidence = status.evidence
         status.evidence = result
 
         failed = candidate in (ServiceState.DOWN, ServiceState.ZOMBIE)
@@ -29,6 +30,8 @@ class StateManager:
         if not currently_failed and failed:
             if status.consecutive_failures == 0:
                 status.first_failure_observed = result.timestamp
+                status.recovery_first_observed = None
+                status.recovery_confirmed_at = None
             status.consecutive_failures += 1
             status.consecutive_successes = 0
             if status.consecutive_failures >= self.failure_threshold:
@@ -49,12 +52,18 @@ class StateManager:
                 status.recovery_confirmed_at = result.timestamp
                 self._transition(status, candidate, reason, result)
             else:
+                status.evidence = previous_evidence
                 status.reason = f"Recovery pending ({status.consecutive_successes}/{self.recovery_threshold}): {reason}"
             return status
 
         if failed:
             status.consecutive_failures = min(status.consecutive_failures + 1, self.failure_threshold)
             status.consecutive_successes = 0
+            status.recovery_first_observed = None
+            if candidate != status.state:
+                self._transition(status, candidate, reason, result)
+            else:
+                status.reason = reason
             return status
 
         status.consecutive_failures = 0

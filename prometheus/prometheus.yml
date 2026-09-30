@@ -1,10 +1,7 @@
 # prometheus/prometheus.yml
-# Starter Prometheus scrape configuration for healthcheck-sentinel.
-# TODO: Expand scrape targets as services are implemented.
-
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 5s
+  evaluation_interval: 5s
   external_labels:
     project: healthcheck-sentinel
     env: development
@@ -18,15 +15,7 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  # healthcheck-sentinel services (add ports as services are built)
-  - job_name: health_checker
+  # Monitoring Agent with Prometheus metrics
+  - job_name: monitoring-agent
     static_configs:
-      - targets: ["health-checker:8001"]
-
-  - job_name: alert_manager
-    static_configs:
-      - targets: ["alert-manager:8002"]
-
-  - job_name: api_gateway
-    static_configs:
-      - targets: ["api-gateway:8000"]
+      - targets: ["monitoring-agent:9100"]

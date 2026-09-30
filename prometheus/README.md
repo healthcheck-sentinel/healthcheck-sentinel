@@ -1,12 +1,3 @@
-# Prometheus Configuration
+# Observability
 
-This directory holds all Prometheus-related configuration for healthcheck-sentinel.
-
-```
-prometheus/
-├── prometheus.yml          # Main Prometheus scrape configuration
-├── rules/
-│   └── alerts.yml          # Alerting rules (will be populated)
-└── dashboards/
-    └── sentinel.json       # Grafana dashboard JSON (will be populated)
-```
+The agent exports probe, confirmed state, incident, process CPU and RSS metrics on port 9100. Prometheus scrapes it every five seconds. See the root README for metric names, semantics, queries and measured demo instructions. Rules cover ZOMBIE, DOWN and an unavailable monitor; the agent owns ChatOps notifications.

@@ -6,10 +6,11 @@ namespace: healthcheck-sentinel
 
 resources:
   - namespace.yaml
-  # TODO: Add deployment/service YAMLs here as services are implemented
-  # - health-checker-deployment.yaml
-  # - alert-manager-deployment.yaml
-  # - api-gateway-deployment.yaml
+  - payment-service.yaml
+  - order-service.yaml
+  - user-service.yaml
+  - monitoring-agent.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: healthcheck-sentinel
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: healthcheck-sentinel

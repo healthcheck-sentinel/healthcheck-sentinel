@@ -1,0 +1,16 @@
+# Explicit demo override: notifications go only to a local HTTP capture server.
+services:
+  monitoring-agent:
+    environment:
+      - SLACK_WEBHOOK_URL=http://slack-recorder:8080/webhook
+      - SLACK_BOT_TOKEN=
+    depends_on:
+      slack-recorder:
+        condition: service_started
+  slack-recorder:
+    image: healthcheck-sentinel-monitoring-agent
+    command: ["python", "/demo/slack_recorder.py"]
+    volumes:
+      - ./scripts/slack_recorder.py:/demo/slack_recorder.py:ro
+    ports:
+      - "127.0.0.1:18080:8080"

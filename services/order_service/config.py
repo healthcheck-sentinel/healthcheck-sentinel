@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     order_redis_url: str = "redis://redis:6379/1"
 
     # ── Readiness probe timeouts (seconds) ────────────────────────────────
-    db_connect_timeout: float = 3.0
-    redis_connect_timeout: float = 3.0
+    db_connect_timeout: float = 0.5
+    redis_connect_timeout: float = 0.5
 
 
 # Module-level singleton — import this everywhere

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitoring-agent
+  labels:
+    app.kubernetes.io/name: monitoring-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: monitoring-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: monitoring-agent
+    spec:
+      containers:
+        - name: monitoring-agent
+          image: healthcheck-sentinel-monitoring-agent:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9100
+              name: metrics
+          env:
+            - name: PAYMENT_SERVICE_URL
+              value: "http://payment-service:8001"
+            - name: ORDER_SERVICE_URL
+              value: "http://order-service:8002"
+            - name: USER_SERVICE_URL
+              value: "http://user-service:8003"
+            - name: METRICS_PORT
+              value: "9100"
+            - name: AGENT_POLL_INTERVAL_SECONDS
+              value: "4"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitoring-agent
+  labels:
+    app.kubernetes.io/name: monitoring-agent
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9100
+      targetPort: metrics
+      name: metrics
+  selector:
+    app.kubernetes.io/name: monitoring-agent

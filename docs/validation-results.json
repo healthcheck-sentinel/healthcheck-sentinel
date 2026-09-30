@@ -1,0 +1,259 @@
+{
+  "measured_at": "2026-09-30T11:33:22.748148+00:00",
+  "environment": "Docker Desktop Linux; three services",
+  "notification_transport": "local HTTP webhook capture; not real Slack",
+  "baseline": "all healthz/readyz 200; all HEALTHY",
+  "scenarios": [
+    {
+      "cause": "postgresql",
+      "endpoints_during_failure": {
+        "payment-service": {
+          "healthz": 200,
+          "readyz": 503
+        },
+        "order-service": {
+          "healthz": 200,
+          "readyz": 503
+        }
+      },
+      "incident": {
+        "incident_id": "INC-001",
+        "status": "RESOLVED",
+        "state": "ZOMBIE",
+        "root_cause": "postgresql",
+        "affected_services": [
+          "order-service",
+          "payment-service"
+        ],
+        "first_failure_time": "2026-09-30T11:33:26.659830+00:00",
+        "confirmation_time": "2026-09-30T11:33:29.691919+00:00",
+        "recovery_time": "2026-09-30T11:33:42.452687+00:00",
+        "detection_time_seconds": 3.032006,
+        "explanation": "order-service and payment-service are alive but not ready. Both report PostgreSQL connectivity failure. PostgreSQL is the shared failing critical dependency.",
+        "evidence": {
+          "payment-service": {
+            "service": "payment-service",
+            "timestamp": "2026-09-30T11:33:37.258508+00:00",
+            "healthz_status": 200,
+            "readyz_status": 503,
+            "latency_ms": 513.23,
+            "dependencies": {
+              "postgres": false,
+              "redis": true
+            },
+            "error_reason": "HTTP 503 from http://payment-service:8001/readyz"
+          },
+          "order-service": {
+            "service": "order-service",
+            "timestamp": "2026-09-30T11:33:37.259100+00:00",
+            "healthz_status": 200,
+            "readyz_status": 503,
+            "latency_ms": 513.74,
+            "dependencies": {
+              "postgres": false,
+              "redis": true
+            },
+            "error_reason": "HTTP 503 from http://order-service:8002/readyz"
+          }
+        }
+      },
+      "injection_to_confirmation_seconds": 6.934521,
+      "first_failed_probe_to_confirmation_seconds": 3.032006,
+      "restart_to_recovery_seconds": 5.647549,
+      "confirmation_to_webhook_receipt_seconds": 0.019551,
+      "notifications": [
+        {
+          "incident_id": "INC-001",
+          "status": "ACTIVE",
+          "outcome": "delivered",
+          "dispatch_seconds": 0.020475251999982902,
+          "completed_at": "2026-09-30T11:33:29.713268+00:00"
+        },
+        {
+          "incident_id": "INC-001",
+          "status": "RESOLVED",
+          "outcome": "delivered",
+          "dispatch_seconds": 0.019841741000050206,
+          "completed_at": "2026-09-30T11:33:42.472949+00:00"
+        }
+      ],
+      "captured_http_messages": 2,
+      "duplicate_incidents": 0
+    },
+    {
+      "cause": "redis",
+      "endpoints_during_failure": {
+        "payment-service": {
+          "healthz": 200,
+          "readyz": 503
+        },
+        "order-service": {
+          "healthz": 200,
+          "readyz": 503
+        }
+      },
+      "incident": {
+        "incident_id": "INC-002",
+        "status": "RESOLVED",
+        "state": "ZOMBIE",
+        "root_cause": "redis",
+        "affected_services": [
+          "order-service",
+          "payment-service"
+        ],
+        "first_failure_time": "2026-09-30T11:33:46.990782+00:00",
+        "confirmation_time": "2026-09-30T11:33:50.020764+00:00",
+        "recovery_time": "2026-09-30T11:34:02.794957+00:00",
+        "detection_time_seconds": 3.023525,
+        "explanation": "order-service and payment-service are alive but not ready. Both report Redis connectivity failure. Redis is the shared failing critical dependency.",
+        "evidence": {
+          "payment-service": {
+            "service": "payment-service",
+            "timestamp": "2026-09-30T11:33:57.593465+00:00",
+            "healthz_status": 200,
+            "readyz_status": 503,
+            "latency_ms": 516.51,
+            "dependencies": {
+              "postgres": true,
+              "redis": false
+            },
+            "error_reason": "HTTP 503 from http://payment-service:8001/readyz"
+          },
+          "order-service": {
+            "service": "order-service",
+            "timestamp": "2026-09-30T11:33:57.592211+00:00",
+            "healthz_status": 200,
+            "readyz_status": 503,
+            "latency_ms": 515.37,
+            "dependencies": {
+              "postgres": true,
+              "redis": false
+            },
+            "error_reason": "HTTP 503 from http://order-service:8002/readyz"
+          }
+        }
+      },
+      "injection_to_confirmation_seconds": 7.396246,
+      "first_failed_probe_to_confirmation_seconds": 3.023525,
+      "restart_to_recovery_seconds": 5.672073,
+      "confirmation_to_webhook_receipt_seconds": 0.020755,
+      "notifications": [
+        {
+          "incident_id": "INC-002",
+          "status": "ACTIVE",
+          "outcome": "delivered",
+          "dispatch_seconds": 0.02131870699997762,
+          "completed_at": "2026-09-30T11:33:50.042862+00:00"
+        },
+        {
+          "incident_id": "INC-002",
+          "status": "RESOLVED",
+          "outcome": "delivered",
+          "dispatch_seconds": 0.025116777999983242,
+          "completed_at": "2026-09-30T11:34:02.820798+00:00"
+        }
+      ],
+      "captured_http_messages": 2,
+      "duplicate_incidents": 0
+    },
+    {
+      "cause": "payment-service",
+      "endpoints_during_failure": {
+        "payment-service": {
+          "healthz": null,
+          "readyz": null
+        },
+        "order-service": {
+          "healthz": 200,
+          "readyz": 200
+        }
+      },
+      "incident": {
+        "incident_id": "INC-003",
+        "status": "RESOLVED",
+        "state": "DOWN",
+        "root_cause": "payment-service",
+        "affected_services": [
+          "payment-service"
+        ],
+        "first_failure_time": "2026-09-30T11:34:09.844262+00:00",
+        "confirmation_time": "2026-09-30T11:34:17.860139+00:00",
+        "recovery_time": "2026-09-30T11:34:34.080763+00:00",
+        "detection_time_seconds": 8.015877,
+        "explanation": "payment-service process is down and unreachable on /healthz probe.",
+        "evidence": {
+          "payment-service": {
+            "service": "payment-service",
+            "timestamp": "2026-09-30T11:34:28.904447+00:00",
+            "healthz_status": null,
+            "readyz_status": null,
+            "latency_ms": 3008.14,
+            "dependencies": {},
+            "error_reason": "ConnectTimeout: ; ConnectTimeout: "
+          }
+        }
+      },
+      "injection_to_confirmation_seconds": 14.843855,
+      "first_failed_probe_to_confirmation_seconds": 8.015877,
+      "restart_to_recovery_seconds": 8.993589,
+      "confirmation_to_webhook_receipt_seconds": 0.023822,
+      "notifications": [
+        {
+          "incident_id": "INC-003",
+          "status": "ACTIVE",
+          "outcome": "delivered",
+          "dispatch_seconds": 0.023991014999978688,
+          "completed_at": "2026-09-30T11:34:17.885518+00:00"
+        },
+        {
+          "incident_id": "INC-003",
+          "status": "RESOLVED",
+          "outcome": "delivered",
+          "dispatch_seconds": 0.020940069000062067,
+          "completed_at": "2026-09-30T11:34:35.173348+00:00"
+        }
+      ],
+      "captured_http_messages": 2,
+      "duplicate_incidents": 0
+    }
+  ],
+  "transient": {
+    "pause_seconds": 0.25,
+    "new_incidents": 0,
+    "new_notifications": 0,
+    "limitation": "Poll alignment is not guaranteed; deterministic transient suppression is also unit-tested."
+  },
+  "cpu": {
+    "sample_seconds": 57.39065636800001,
+    "cpu_seconds": 0.42704264000000003,
+    "percent_one_core": 0.7440978497644631
+  },
+  "metrics_available": [
+    "healthcheck_service_status",
+    "healthcheck_probe_duration_seconds",
+    "healthcheck_probe_failures_total",
+    "healthcheck_detection_seconds",
+    "healthcheck_incidents_total",
+    "healthcheck_process_cpu_percent",
+    "healthcheck_process_memory_bytes"
+  ],
+  "prometheus_targets": [
+    {
+      "job": "monitoring-agent",
+      "health": "up"
+    },
+    {
+      "job": "prometheus",
+      "health": "up"
+    }
+  ],
+  "probe_mean_seconds": [
+    {
+      "metric": {},
+      "value": [
+        1790768145.366,
+        "0.29208512866956404"
+      ]
+    }
+  ]
+}

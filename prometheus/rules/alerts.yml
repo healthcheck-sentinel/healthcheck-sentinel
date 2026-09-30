@@ -1,16 +1,22 @@
-# prometheus/rules/alerts.yml
-# Alerting rules for healthcheck-sentinel.
-# TODO: Add rules as metrics are defined in services.
-
 groups:
   - name: sentinel.rules
     rules:
-      # Placeholder — replace with real alert expressions
-      - alert: ServiceDown
-        expr: up == 0
-        for: 1m
+      - alert: SentinelServiceZombie
+        expr: healthcheck_service_status{state="ZOMBIE"} == 1
         labels:
           severity: critical
         annotations:
-          summary: "Service {{ $labels.job }} is down"
-          description: "The Prometheus target {{ $labels.instance }} for job {{ $labels.job }} has been unreachable for more than 1 minute."
+          summary: "{{ $labels.service }} is alive but its critical readiness checks fail"
+      - alert: SentinelServiceDown
+        expr: healthcheck_service_status{state="DOWN"} == 1
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} is down"
+      - alert: SentinelMonitorUnavailable
+        expr: up{job="monitoring-agent"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sentinel metrics target is unavailable"

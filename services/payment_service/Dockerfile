@@ -14,4 +14,4 @@ COPY services/payment_service/ ./services/payment_service/
 
 EXPOSE 8001
 
-CMD ["uvicorn", "services.payment_service.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "services.payment_service.main:app", "--loop", "asyncio", "--host", "0.0.0.0", "--port", "8001"]

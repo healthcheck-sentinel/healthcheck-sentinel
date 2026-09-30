@@ -159,6 +159,9 @@ class IncidentManager:
 
                 for svc_name in incident.affected_services:
                     svc_status = statuses.get(svc_name)
+                    if svc_status is None:
+                        all_recovered = False
+                        break
                     if svc_status is not None:
                         if isinstance(svc_status, ServiceStatus):
                             is_healthy = svc_status.state == ServiceState.HEALTHY

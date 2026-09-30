@@ -33,8 +33,7 @@ def test_active_incident_message_formatting() -> None:
     assert "postgresql" in payload["blocks"][1]["text"]["text"]
     assert "payment-service" in payload["blocks"][1]["text"]["text"]
     assert "5.8s" in payload["blocks"][1]["text"]["text"]
-    assert payload["blocks"][2]["elements"][0]["action_id"] == "view_logs"
-    assert payload["blocks"][2]["elements"][1]["action_id"] == "restart_incident"
+    assert not any(block["type"] == "actions" for block in payload["blocks"])
 
 
 def test_resolved_incident_message_formatting() -> None:
