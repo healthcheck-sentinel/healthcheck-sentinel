@@ -107,3 +107,8 @@ node_modules/
 # Local state/volume exports (never source)
 .sentinel-state/
 docker-data/
+
+# Local temporary files
+*.tmp
+/tmp/
+/temp/
