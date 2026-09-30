@@ -3,13 +3,35 @@ payment-service — FastAPI microservice
 Handles payment processing simulation.
 
 Ports:
-  HTTP  : 8001
-  Metrics: 9101 (future)
+  HTTP: 8001
+
+Health probes:
+  GET /healthz  — liveness:  always 200 while the process is alive
+  GET /readyz   — readiness: 200 only when PostgreSQL AND Redis are reachable
 """
 
-from fastapi import FastAPI
+import logging
+import uuid
+import datetime
+
+from fastapi import FastAPI, Response
 import uvicorn
 
+from .config import settings
+from .checks import run_readiness_checks
+
+# ---------------------------------------------------------------------------
+# Logging — structured, level driven by env var
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=settings.log_level.upper(),
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+log = logging.getLogger(settings.service_name)
+
+# ---------------------------------------------------------------------------
+# App
+# ---------------------------------------------------------------------------
 app = FastAPI(
     title="Payment Service",
     description="Handles payment processing for healthcheck-sentinel demo.",
@@ -17,10 +39,9 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# In-memory state (demo only — no real persistence)
+# In-memory demo store (no real persistence)
 # ---------------------------------------------------------------------------
 _payments: list[dict] = []
-_ready = True  # flip to False to simulate not-ready state
 
 
 # ---------------------------------------------------------------------------
@@ -30,10 +51,11 @@ _ready = True  # flip to False to simulate not-ready state
 @app.get("/", summary="Service info")
 async def root():
     """Return basic service metadata."""
+    log.debug("Root endpoint called")
     return {
-        "service": "payment-service",
+        "service": settings.service_name,
         "version": "0.1.0",
-        "port": 8001,
+        "port": settings.service_port,
         "description": "Handles payment processing",
         "endpoints": ["/", "/healthz", "/readyz", "/payments"],
     }
@@ -42,40 +64,51 @@ async def root():
 @app.get("/healthz", summary="Liveness probe")
 async def healthz():
     """
-    Liveness probe — confirms the service process is alive.
-    Kubernetes will restart the pod if this returns non-2xx.
+    Liveness probe — returns 200 as long as the FastAPI process is running.
+
+    This check intentionally does NOT verify external dependencies.
+    Kubernetes uses liveness to decide whether to restart the container.
+    Restarting on a DB outage would be wrong — use /readyz for that.
     """
-    return {"status": "ok", "service": "payment-service"}
+    log.debug("Liveness probe called")
+    return {"status": "ok", "service": settings.service_name}
 
 
 @app.get("/readyz", summary="Readiness probe")
-async def readyz():
+async def readyz(response: Response):
     """
-    Readiness probe — confirms the service is ready to accept traffic.
-    Returns 503 if not ready (e.g. warming up, dependency unavailable).
-    """
-    from fastapi import Response
+    Readiness probe — returns 200 only when ALL critical dependencies are up.
 
-    if not _ready:
-        return Response(
-            content='{"status": "not_ready", "service": "payment-service"}',
-            status_code=503,
-            media_type="application/json",
-        )
-    return {"status": "ready", "service": "payment-service"}
+    Checks performed (non-destructive):
+      - PostgreSQL: opens a connection, runs SELECT 1, closes connection
+      - Redis:      connects and sends PING
+
+    Returns 503 if any dependency is unreachable so the load balancer /
+    Kubernetes stops routing traffic to this instance.
+    """
+    log.info("Readiness probe called")
+    result = await run_readiness_checks()
+
+    if not result["ready"]:
+        response.status_code = 503  # Service Unavailable
+
+    return {
+        "status": "ready" if result["ready"] else "not_ready",
+        "service": settings.service_name,
+        "checks": result["checks"],
+    }
 
 
 @app.get("/payments", summary="List all demo payments")
 async def list_payments():
     """Return the in-memory list of demo payments."""
+    log.debug("Listing %d payments", len(_payments))
     return {"payments": _payments, "total": len(_payments)}
 
 
 @app.post("/payments", summary="Create a demo payment", status_code=201)
 async def create_payment(amount: float, currency: str = "USD"):
     """Simulate creating a payment record (no real processing)."""
-    import uuid, datetime
-
     payment = {
         "id": str(uuid.uuid4()),
         "amount": amount,
@@ -84,6 +117,7 @@ async def create_payment(amount: float, currency: str = "USD"):
         "created_at": datetime.datetime.utcnow().isoformat(),
     }
     _payments.append(payment)
+    log.info("Payment created: id=%s amount=%s %s", payment["id"], amount, currency)
     return payment
 
 
@@ -92,4 +126,5 @@ async def create_payment(amount: float, currency: str = "USD"):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    log.info("Starting %s on port %d", settings.service_name, settings.service_port)
+    uvicorn.run("main:app", host="0.0.0.0", port=settings.service_port, reload=True)
