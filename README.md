@@ -168,7 +168,7 @@ Docker Compose is the primary demo. Kubernetes deployment/service manifests pres
 - `python scripts/preflight.py`: read-only Docker, endpoint and Prometheus checks.
 - `python scripts/verify_slack.py`: secret-free configuration check. Add `--send-test` to explicitly send a labeled test message after configuring `.env` privately.
 
-A demo video, team details and submission-platform upload still require the submitter. Production persistence, retry delivery and interactive restart actions are deliberately deferred for the hackathon.
+Team details and submission-platform upload remain submitter-owned. Production persistence and retry delivery remain deferred. Signed interactive Slack actions are implemented but require operator allowlists and an HTTPS interactivity endpoint; see the setup section below.
 
 Latest complete handoff: [Final results](docs/FINAL_RESULTS.md), [judge demo](DEMO.md), and [rubric evidence](docs/RUBRIC.md). Fresh measurements: `docs/submission-validation.json`.
 
@@ -192,3 +192,17 @@ See [extended health and operator setup](docs/EXTENDED_HEALTH.md) for memory hea
 ## Current reviewer commands
 
 Use `reviewer_demo.py healthy`, `status`, `degraded`, `zombie`, `down`, and `recover` with the project Python environment. See [reviewer walkthrough](docs/DEMO_STATES.md). DEGRADED uses a bounded real-response latency lease; ZOMBIE and DOWN stop actual containers. Recover after each scenario. Normal Compose startup leaves latency injection disabled.
+
+## Live reviewer dashboard
+
+The complete dashboard is on the `feature/system-validation` branch. With Docker Desktop running, execute from the repository root:
+
+```powershell
+docker compose up -d
+npm.cmd --prefix dashboard ci
+npm.cmd --prefix dashboard run dev
+```
+
+Open http://127.0.0.1:5173. Requires Node.js 22.12+; keep the terminal running. This local, read-only React dashboard reuses the existing status and Prometheus endpoints. It shows service health, incidents, recoveries, metrics and actual Slack delivery receipts. See [dashboard setup](dashboard/README.md).
+
+The latest [submission verification](docs/SUBMISSION_VERIFICATION.md) records 141 passing Python tests, 85% aggregate coverage, nine passing dashboard tests, and the real ZOMBIE/DOWN/DEGRADED recovery checks. Earlier result documents preserve historical measurements.
