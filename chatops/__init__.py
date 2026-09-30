@@ -1,10 +1,18 @@
-"""
-chatops package.
+"""Slack-based ChatOps utilities for incident notifications and remediation."""
 
-Responsible for:
-- Slack Bolt app: slash commands, interactive buttons, event subscriptions
-- PagerDuty Events API v2 integration for incident creation/resolution
-- Message formatting and templating for alert notifications
-- Two-way acknowledgement flows (ack from Slack → resolve in PagerDuty)
-"""
-# TODO: Implement ChatOps integrations
+from chatops.actions import build_restart_action, build_view_logs_action, handle_restart_action, handle_view_logs_action
+from chatops.messages import build_incident_alert, build_recovery_notification
+from chatops.models import Incident
+from chatops.slack_client import SlackClient, verify_slack_signature
+
+__all__ = [
+    "Incident",
+    "SlackClient",
+    "build_incident_alert",
+    "build_recovery_notification",
+    "build_restart_action",
+    "build_view_logs_action",
+    "handle_restart_action",
+    "handle_view_logs_action",
+    "verify_slack_signature",
+]
