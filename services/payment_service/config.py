@@ -26,12 +26,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     # ── PostgreSQL ────────────────────────────────────────────────────────
-    # Example: postgresql://user:password@localhost:5432/payments_db
-    payment_db_url: str = "postgresql://postgres:postgres@localhost:5432/payments_db"
+    # Example: postgresql://postgres:postgres@postgres:5432/healthcheck
+    payment_db_url: str = "postgresql://postgres:postgres@postgres:5432/healthcheck"
 
     # ── Redis ─────────────────────────────────────────────────────────────
-    # Example: redis://localhost:6379/0
-    payment_redis_url: str = "redis://localhost:6379/0"
+    # Example: redis://redis:6379/0
+    payment_redis_url: str = "redis://redis:6379/0"
 
     # ── Readiness probe timeouts (seconds) ────────────────────────────────
     db_connect_timeout: float = 3.0

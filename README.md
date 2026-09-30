@@ -1,12 +1,14 @@
 # 🛡️ healthcheck-sentinel
 
-> **Hackathon Project** — An AI-powered health-check monitoring system that watches your services, detects anomalies, and alerts your team through ChatOps integrations.
+> **Hackathon Project** — A deterministic health-check monitoring system that watches your services, tracks state changes, and alerts your team through ChatOps integrations.
 
 ---
 
 ## ✨ Overview
 
-`healthcheck-sentinel` combines **FastAPI microservices**, a **Gemini AI agent**, **Prometheus metrics**, and **Slack/PagerDuty ChatOps** to give you real-time, intelligent alerting for your infrastructure — all deployable on **Kubernetes**.
+`healthcheck-sentinel` combines **FastAPI microservices**, a **deterministic monitoring agent**, **Prometheus metrics**, and **Slack/PagerDuty ChatOps** to give you real-time, rule-based alerting for your infrastructure — all deployable on **Kubernetes**.
+
+The monitoring agent is entirely rule-based: it polls endpoints on a schedule, evaluates results against configurable thresholds, tracks state transitions, and emits events. No LLM or generative AI is involved in the runtime path.
 
 ---
 
@@ -18,7 +20,7 @@ healthcheck-sentinel/
 │   ├── health_checker/        # Polls endpoints & records health status
 │   ├── alert_manager/         # Processes & routes alert notifications
 │   └── api_gateway/           # Unified API gateway / BFF
-├── agent/                     # AI agent (Gemini) for anomaly reasoning
+├── agent/                     # Deterministic monitoring agent (poll · evaluate · emit)
 ├── chatops/                   # Slack & PagerDuty integrations
 ├── prometheus/                # Prometheus config, alert rules, dashboards
 ├── kubernetes/                # Kubernetes manifests (Deployments, Services, etc.)
@@ -36,7 +38,7 @@ healthcheck-sentinel/
 | Layer | Technology |
 |---|---|
 | Backend Services | Python · FastAPI · Uvicorn |
-| AI Agent | Google Gemini (via `google-generativeai`) |
+| Monitoring Agent | Pure Python · asyncio · rule-based state machine |
 | Metrics | Prometheus · Grafana |
 | ChatOps | Slack Bolt · PagerDuty Events API v2 |
 | Task Queue | Redis · Celery (planned) |

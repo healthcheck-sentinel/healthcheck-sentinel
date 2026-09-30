@@ -35,8 +35,18 @@ venv.bak/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 .env.local
 .env.*.local
+
+# Local credentials and certificates
+.secrets/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
 
 # IDE & editors
 .vscode/
